@@ -6,7 +6,7 @@ import { ref } from "vue";
 import { RouterLink, useRoute } from "vue-router";
 import router from "@/router";
 import { useAuthStore } from "@/stores/auth";
-import { toast } from "@/utils/utils";
+import { toast, timeAgo } from "@/utils/utils";
 
 const dataStore = useDataStore();
 const authStore = useAuthStore();
@@ -19,6 +19,8 @@ const { username, postId } = useRoute().params;
 const post = ref({});
 const comments = ref([]);
 const newComment = ref("");
+const isForEdit = ref(false);
+const commentId = ref(-1);
 
 onMounted(async () => {
   try {
@@ -30,24 +32,77 @@ onMounted(async () => {
 });
 
 // Metoda za dodavanje komentara
-const addComment = async () => {
+const handleComment = async () => {
   if (newComment.value.trim()) {
-    try {
-      await dataStore.createCommentForPost(postId, newComment.value);
-    } catch (error) {
-      toast.error(error);
+    if (!isForEdit.value) {
+      // ADD COMMENT
+      await addComment();
+    } else {
+      // UPDATE COMMENT
+      await editComment();
     }
-
-    comments.value.push({
-      username: authStore.currentUsername,
-      content: newComment.value,
-      profilePictureUrl: authStore.currentUserPhotoUrl,
-      // createdAt
-    });
-    newComment.value = "";
   } else {
     toast.info("Enter your message");
   }
+};
+
+const addComment = async () => {
+  try {
+    const data = await dataStore.createCommentForPost(postId, newComment.value);
+    comments.value.push({
+      id: data.id,
+      username: authStore.currentUsername,
+      content: newComment.value,
+      profilePictureUrl: authStore.currentUserPhotoUrl,
+      createdAt: data.createdAt,
+    });
+    newComment.value = "";
+    toast.success("Comment Successfully Created!");
+  } catch (error) {
+    toast.error(error);
+  }
+};
+
+const editComment = async () => {
+  try {
+    const index = getIndexForComment(commentId.value);
+    const data = await dataStore.editComment(commentId.value, newComment.value);
+    comments.value[index] = {
+      ...comments.value[index],
+      content: data.content,
+      createdAt: data.createdAt,
+    };
+    toast.success("Successfully Updated Comment!");
+  } catch (error) {
+    toast.error(error);
+  } finally {
+    newComment.value = "";
+    isForEdit.value = false;
+  }
+};
+
+const editCommentHandler = (id) => {
+  const index = getIndexForComment(id);
+  newComment.value = comments.value[index].content;
+  isForEdit.value = true;
+  commentId.value = id;
+};
+
+const removeComment = async (id) => {
+  try {
+    const data = await dataStore.removeComment(id);
+    const index = getIndexForComment(id);
+    comments.value.splice(index, 1);
+
+    toast.success(data);
+  } catch (error) {
+    toast.error(error);
+  }
+};
+
+const getIndexForComment = (id) => {
+  const index = comments.value.findIndex((comment) => comment.id === id);
+  return index;
 };
 </script>
 
@@ -89,23 +144,46 @@ const addComment = async () => {
             No Comments Yet!
           </h1>
           <div class="flex-1 overflow-y-auto" style="max-height: 300px">
-            <div v-for="comment in comments" :key="comment.id" class="mb-4">
-              <div class="flex items-start space-x-4">
+            <div
+              v-for="comment in comments"
+              :key="comment.id"
+              class="mb-4 flex items-start space-x-4 items-center"
+            >
+              <!-- User icon and comment content -->
+              <div class="flex items-start space-x-4 flex-1">
                 <img
                   :src="`${comment.profilePictureUrl}`"
                   alt="User Icon"
                   class="w-10 h-10 rounded-full"
                 />
-                <div class="flex-1">
+                <div>
                   <RouterLink
                     :to="`/${comment.username}`"
                     class="font-semibold text-lg"
                     >{{ comment.username }}</RouterLink
                   >
-                  <p class="text-sm">{{ comment.content }}</p>
-                  <p class="text-xs text-gray-500">6 hours ago</p>
+                  <p class="text-sm break-words max-w-[12rem]">
+                    {{ comment.content }}
+                  </p>
+                  <p class="text-xs text-gray-500">
+                    {{ timeAgo(comment.createdAt) }}
+                  </p>
                 </div>
               </div>
+
+              <!-- Edit Icon for each comment -->
+              <i
+                v-if="comment.username === authStore.currentUsername"
+                @click="editCommentHandler(comment.id)"
+                class="pi pi-pencil text-gray-500 hover:text-gray-700 cursor-pointer"
+                style="font-size: 1.25rem"
+              ></i>
+              <i
+                v-if="comment.username === authStore.currentUsername"
+                @click="removeComment(comment.id)"
+                class="pi pi-trash text-gray-500 hover:text-gray-700 cursor-pointer"
+                style="font-size: 1.25rem"
+              ></i>
             </div>
           </div>
 
@@ -114,12 +192,14 @@ const addComment = async () => {
             <input
               v-model="newComment"
               type="text"
-              placeholder="Add a comment..."
+              :placeholder="`${
+                !isForEdit ? 'Add comment...' : 'Edit comment...'
+              }`"
               class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <i
               style="cursor: pointer"
-              @click="addComment"
+              @click="handleComment"
               class="pi pi-send text-blue-500"
             />
           </div>

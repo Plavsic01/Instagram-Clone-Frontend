@@ -16,6 +16,7 @@ export const useDataStore = defineStore("data", {
           `/api/v1/posts/add-comment/${postId}`,
           { content: content }
         );
+        return response.data;
       } catch (error) {
         throw new Error(error.response.data);
       }
@@ -37,6 +38,33 @@ export const useDataStore = defineStore("data", {
           return;
         }
         const response = await axios.get(`/api/v1/posts/comments/${postId}`);
+        return response.data;
+      } catch (error) {
+        throw new Error(error.response.data);
+      }
+    },
+    async editComment(commentId, content) {
+      try {
+        if (redirectIfTokenInvalid()) {
+          return;
+        }
+        const response = await axios.put(
+          `/api/v1/posts/edit-comment/${commentId}`,
+          { content: content }
+        );
+        return response.data;
+      } catch (error) {
+        throw new Error(error.response.data);
+      }
+    },
+    async removeComment(commentId) {
+      try {
+        if (redirectIfTokenInvalid()) {
+          return;
+        }
+        const response = await axios.delete(
+          `/api/v1/posts/remove-comment/${commentId}`
+        );
         return response.data;
       } catch (error) {
         throw new Error(error.response.data);
