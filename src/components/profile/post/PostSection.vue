@@ -2,8 +2,7 @@
 import { ref, defineProps } from "vue";
 import { useRoute } from "vue-router";
 import ProgressSpinner from "primevue/progressspinner";
-import router from "@/router";
-import { RouterView } from "vue-router";
+import PostModal from "./PostModal.vue";
 
 defineProps({
   posts: {
@@ -12,16 +11,20 @@ defineProps({
   isLoading: Boolean,
 });
 
+const isModalVisible = ref(false);
+const selectedPost = ref(null);
+
+const openModal = (post) => {
+  selectedPost.value = post;
+  isModalVisible.value = true;
+};
+
+const closeModal = () => {
+  isModalVisible.value = false;
+};
+
 const route = useRoute();
 const username = route.params.username;
-
-const isModalOpened = ref(false);
-const openModal = (postId) => {
-  router.push({
-    name: "PostModal",
-    params: { username, postId },
-  });
-};
 
 //const username = useRoute().params.username; // ovo ce mi trebati kasnije za edit slika, ali to se nece raditi ovde vec ce imati /edit
 </script>
@@ -40,20 +43,18 @@ const openModal = (postId) => {
   <template v-else>
     <div class="container mx-auto p-6">
       <div class="flex justify-center">
-        <div
-          class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-6"
-        >
+        <div class="grid grid-cols-3 gap-1 w-full max-w-3xl">
           <!-- Post Item -->
           <div
-            @click="openModal(post.id)"
             v-for="post in posts"
             :key="post.id"
+            @click="openModal(post)"
             class="relative group"
           >
             <img
               :src="`http://localhost:8080/api/uploads/images/${post.imageUrl}`"
               alt="Post Image"
-              class="w-64 h-64 object-cover rounded-lg"
+              class="w-full h-auto aspect-square object-cover"
             />
 
             <!-- Heart Icon and Like Count (Hidden initially) -->
@@ -70,6 +71,10 @@ const openModal = (postId) => {
       </div>
     </div>
 
-    <RouterView v-if="$route.meta.isModal" />
+    <PostModal
+      v-if="isModalVisible"
+      :post="selectedPost"
+      @close-modal="closeModal"
+    />
   </template>
 </template>

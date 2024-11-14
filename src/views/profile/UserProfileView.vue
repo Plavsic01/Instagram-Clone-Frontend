@@ -1,10 +1,11 @@
 <script setup>
 import { redirectIfTokenInvalid } from "@/utils/utils";
-import PostSection from "@/components/profile/PostSection.vue";
-import ProfileInfo from "@/components/profile/ProfileInfo.vue";
+import PostSection from "@/components/profile/post/PostSection.vue";
+import ProfileInfo from "@/components/profile/info/ProfileInfo.vue";
 import { ref, onMounted } from "vue";
 import { useRoute } from "vue-router";
 import axios from "axios";
+import { toast } from "@/utils/utils";
 
 const posts = ref([]);
 const user = ref({});
@@ -12,6 +13,10 @@ const user = ref({});
 let isLoadingPosts = ref(true);
 
 const username = useRoute().params.username;
+
+const handleUpdatePosts = (post) => {
+  posts.value.push(post);
+};
 
 // MOVE THIS TO STATE
 
@@ -23,7 +28,7 @@ onMounted(async () => {
     const response = await axios.get(`/api/v1/posts/${username}`);
     posts.value = response.data;
   } catch (error) {
-    console.error("Error fetching posts", error);
+    toast.error(error.message);
   } finally {
     isLoadingPosts = false;
   }
@@ -49,13 +54,17 @@ onMounted(async () => {
     user.value = userObj;
   } catch (error) {
     console.error("Error fetching user", error);
-  } finally {
-    // isLoadingUser = false;
+    toast.error(error.message);
   }
 });
 </script>
 
 <template>
-  <ProfileInfo :user="user" :numberOfPosts="posts.length" />
+  <ProfileInfo
+    :user="user"
+    :numberOfPosts="posts.length"
+    @update-posts="handleUpdatePosts"
+  />
+
   <PostSection :posts="posts" :isLoading="isLoadingPosts" />
 </template>

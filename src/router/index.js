@@ -3,7 +3,7 @@ import HomeView from "@/views/home/HomeView.vue";
 import Auth from "@/views/auth/Auth.vue";
 import { useAuthStore } from "@/stores/auth";
 import UserProfileView from "@/views/profile/UserProfileView.vue";
-import PostModal from "@/components/profile/PostModal.vue";
+import PostModal from "@/components/profile/post/PostModal.vue";
 
 const routes = [
   {
@@ -28,14 +28,6 @@ const routes = [
     path: "/:username",
     name: "profile",
     component: UserProfileView,
-    children: [
-      {
-        path: ":postId",
-        name: "PostModal",
-        component: PostModal,
-        meta: { isModal: true },
-      },
-    ],
     meta: {
       requiresAuth: true,
     },

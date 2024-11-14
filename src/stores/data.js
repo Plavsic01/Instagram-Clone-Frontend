@@ -7,6 +7,18 @@ export const useDataStore = defineStore("data", {
     token: localStorage.getItem("token") || null,
   }),
   actions: {
+    async createPost(formData) {
+      try {
+        const response = await axios.post("/api/v1/posts", formData, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        });
+        return response.data;
+      } catch (error) {
+        throw new Error(error.response.data);
+      }
+    },
     async createCommentForPost(postId, content) {
       try {
         if (redirectIfTokenInvalid()) {

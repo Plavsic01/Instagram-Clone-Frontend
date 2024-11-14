@@ -61,5 +61,17 @@ export const useAuthStore = defineStore("auth", {
         console.error("Fetch user error:", error);
       }
     },
+    async toggleFollowUser(userId, path) {
+      try {
+        if (redirectIfTokenInvalid()) {
+          return;
+        }
+        const response = await axios.post(`/api/v1/users/${path}/${userId}`);
+        return response.data;
+      } catch (error) {
+        console.log(error);
+        throw new Error(error.response.data);
+      }
+    },
   },
 });

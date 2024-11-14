@@ -1,6 +1,6 @@
 <script setup>
 import { RouterView } from "vue-router";
-import Sidebar from "./components/UI/Sidebar.vue";
+import Sidebar from "./components/ui/Sidebar.vue";
 import { useAuthStore } from "./stores/auth";
 
 const authStore = useAuthStore();
