@@ -73,5 +73,21 @@ export const useAuthStore = defineStore("auth", {
         throw new Error(error.response.data);
       }
     },
+    async searchUser(username) {
+      try {
+        if (redirectIfTokenInvalid()) {
+          return;
+        }
+        const response = await axios.get(`/api/v1/users`, {
+          params: {
+            username: username,
+          },
+        });
+        return response.data;
+      } catch (error) {
+        console.log(error);
+        throw new Error(error.response.data);
+      }
+    },
   },
 });

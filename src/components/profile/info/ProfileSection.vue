@@ -25,6 +25,7 @@ const openModal = (data, type) => {
     </div>
     <div class="text-center">
       <p
+        style="cursor: pointer"
         @click="openModal(user.followers, 'Followers')"
         class="text-lg font-semibold"
       >
@@ -34,6 +35,7 @@ const openModal = (data, type) => {
     </div>
     <div class="text-center">
       <p
+        style="cursor: pointer"
         @click="openModal(user.following, 'Following')"
         class="text-lg font-semibold"
       >

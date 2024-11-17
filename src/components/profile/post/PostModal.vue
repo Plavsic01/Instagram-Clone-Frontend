@@ -2,7 +2,7 @@
 import { Avatar } from "primevue";
 import { useDataStore } from "@/stores/data";
 import { onMounted } from "vue";
-import { ref, defineProps, defineEmits } from "vue";
+import { ref, toRef, defineProps, defineEmits } from "vue";
 import { useAuthStore } from "@/stores/auth";
 import { toast, timeAgo } from "@/utils/utils";
 
@@ -10,6 +10,8 @@ const dataStore = useDataStore();
 const authStore = useAuthStore();
 
 const props = defineProps({ post: Object });
+const post = toRef(props, "post");
+
 const emit = defineEmits(["close-modal"]);
 
 const closeModal = () => {
@@ -35,10 +37,8 @@ onMounted(async () => {
 const handleComment = async () => {
   if (newComment.value.trim()) {
     if (!isForEdit.value) {
-      // ADD COMMENT
       await addComment();
     } else {
-      // UPDATE COMMENT
       await editComment();
     }
   } else {
@@ -107,6 +107,23 @@ const getIndexForComment = (id) => {
   const index = comments.value.findIndex((comment) => comment.id === id);
   return index;
 };
+
+const toggleLikeHandler = async (id) => {
+  let isLiked = null;
+  try {
+    if (post.value.isLikedByCurrentUser) {
+      isLiked = await dataStore.toggleLikePost(id, "unlike-post");
+    } else {
+      isLiked = await dataStore.toggleLikePost(id, "like-post");
+    }
+    post.value.isLikedByCurrentUser = isLiked;
+    post.value.numberOfLikes = isLiked
+      ? ++post.value.numberOfLikes
+      : --post.value.numberOfLikes;
+  } catch (error) {
+    toast.error(error.message);
+  }
+};
 </script>
 
 <template>
@@ -117,7 +134,7 @@ const getIndexForComment = (id) => {
       @click.self="closeModal"
     >
       <!-- Modal Container -->
-      <div class="w-full h-[95vh] max-w-7xl bg-white rounded-none flex">
+      <div class="w-full h-[95vh] max-w-7xl bg-white flex">
         <!-- Slika Sekcija (2/3 širine) -->
         <div class="w-2/3 h-full relative min-h-full max-h-full bg-gray-100">
           <img
@@ -129,85 +146,120 @@ const getIndexForComment = (id) => {
 
         <!-- Sekcija za komentare (1/3 širine) -->
         <div class="w-1/3 p-6 flex flex-col space-y-4 overflow-y-auto">
-          <div class="flex items-center space-x-3">
-            <Avatar
-              :image="`${authStore.currentUserPhotoUrl}`"
-              shape="circle"
-              size="large"
-            />
-            <div>
-              <p class="font-bold text-lg">{{ authStore.currentUsername }}</p>
-              <p class="font-medium text-sm">{{ props.post.description }}</p>
-              <p class="text-sm">{{ timeAgo(props.post.createdAt) }}</p>
+          <!-- Vlasnik objave -->
+          <div>
+            <!-- Ikonica i korisničko ime na vrhu -->
+            <div class="flex items-center space-x-3 mb-2">
+              <Avatar
+                :image="`${authStore.currentUserPhotoUrl}`"
+                shape="circle"
+                size="large"
+              />
+              <p class="font-bold text-sm">{{ authStore.currentUsername }}</p>
+            </div>
+
+            <!-- Divider -->
+            <hr class="border-gray-200 mb-2" />
+
+            <!-- Ikonica, korisničko ime i opis posta -->
+            <div class="flex items-center space-x-3">
+              <Avatar
+                :image="`${authStore.currentUserPhotoUrl}`"
+                shape="circle"
+                size="large"
+              />
+              <div class="flex space-x-2 items-center">
+                <p class="font-bold text-sm">{{ authStore.currentUsername }}</p>
+                <p class="text-sm text-gray-700">
+                  {{ props.post.description }}
+                </p>
+              </div>
             </div>
           </div>
 
-          <!-- Divider -->
-          <hr class="border-gray-200 mb-2" />
-          <!-- Lista komentara (skroluj ako je puno komentara) -->
+          <!-- Lista komentara -->
           <div class="flex-1 space-y-4 mb-4 overflow-y-auto max-h-[80%] pr-4">
-            <div
-              v-for="comment in comments"
-              :key="comment.id"
-              class="pb-1 mb-4 flex justify-between items-start"
-            >
-              <!-- Komentar sa profilnom ikonom -->
-              <div class="flex items-center space-x-3">
-                <Avatar
-                  :image="`${comment.profilePictureUrl}`"
-                  shape="circle"
-                  size="medium"
-                />
-                <div>
-                  <div class="flex items-center space-x-2 flex-wrap">
-                    <RouterLink
-                      class="font-bold text-s"
-                      :to="`/${comment.username}`"
-                      >{{ comment.username }}</RouterLink
-                    >
+            <div v-for="comment in comments" :key="comment.id" class="pb-1">
+              <!-- Komentar sa profilnom ikonom i username -->
+              <div class="flex justify-between items-center">
+                <div class="flex items-center space-x-3">
+                  <Avatar
+                    :image="`${comment.profilePictureUrl}`"
+                    shape="circle"
+                    size="medium"
+                  />
+                  <div>
+                    <div class="flex items-center space-x-2 flex-wrap">
+                      <RouterLink
+                        class="font-bold text-s"
+                        :to="`/${comment.username}`"
+                      >
+                        {{ comment.username }}
+                      </RouterLink>
+                    </div>
                     <p class="text-sm break-words max-w-[10rem]">
                       {{ comment.content }}
                     </p>
                   </div>
-                  <p class="text-xs text-gray-500 mt-1">
-                    {{ timeAgo(comment.createdAt) }}
-                  </p>
                 </div>
-              </div>
 
-              <!-- Ikonice za editovanje i brisanje komentara -->
-              <div class="flex space-x-3">
-                <i
+                <!-- Ikonice za editovanje i brisanje komentara -->
+                <div
+                  class="flex space-x-2"
                   v-if="comment.username === authStore.currentUsername"
-                  class="pi pi-pencil text-gray-500 hover:text-gray-700 cursor-pointer"
-                  style="font-size: 1rem"
-                  @click="editCommentHandler(comment.id)"
-                ></i>
-                <i
-                  v-if="comment.username === authStore.currentUsername"
-                  class="pi pi-trash text-gray-500 hover:text-gray-700 cursor-pointer"
-                  style="font-size: 1rem"
-                  @click="removeComment(comment.id)"
-                ></i>
+                >
+                  <i
+                    class="pi pi-pencil text-gray-500 hover:text-gray-700 cursor-pointer"
+                    style="font-size: 1rem"
+                    @click="editCommentHandler(comment.id)"
+                  ></i>
+                  <i
+                    class="pi pi-trash text-gray-500 hover:text-gray-700 cursor-pointer"
+                    style="font-size: 1rem"
+                    @click="removeComment(comment.id)"
+                  ></i>
+                </div>
               </div>
             </div>
           </div>
 
           <!-- Input za novi komentar -->
-          <textarea
-            v-model="newComment"
-            class="border p-2 rounded-md w-full"
-            placeholder="Write a comment..."
-            rows="4"
-          ></textarea>
+          <div class="relative">
+            <!-- Ikonica srca i paragraf za vreme -->
+            <div class="flex items-center space-x-2 mb-2">
+              <i
+                @click="toggleLikeHandler(post.id)"
+                :style="`${post.isLikedByCurrentUser ? 'color:red' : ''}`"
+                :class="`${
+                  post.isLikedByCurrentUser ? 'pi-heart-fill' : 'pi-heart'
+                } pi text-xl cursor-pointer`"
+              />
+              <p class="text-sm font-bold text-gray-700">
+                {{ post.numberOfLikes }}
+                {{ post.numberOfLikes > 1 ? "likes" : "like" }}
+              </p>
+            </div>
+            <p class="text-xs text-gray-500 mb-2">
+              {{ timeAgo(post.createdAt) }}
+            </p>
 
-          <!-- Dugme za postavljanje komentara -->
-          <button
-            @click="handleComment"
-            class="mt-4 bg-blue-500 text-white p-2 rounded-md hover:bg-blue-600 w-full"
-          >
-            {{ !isForEdit ? "Post Comment" : "Edit Comment" }}
-          </button>
+            <!-- Input polje sa dugmetom unutar njega -->
+            <div class="relative mb-1">
+              <input
+                v-model="newComment"
+                type="text"
+                class="border p-2 rounded-md w-full pr-16"
+                placeholder="Write a comment..."
+              />
+              <button
+                v-if="newComment"
+                @click="handleComment"
+                class="absolute top-1/2 right-4 transform -translate-y-1/2 bg-blue-500 text-white px-3 py-1 rounded-md hover:bg-blue-600"
+              >
+                Post
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>

@@ -2,7 +2,7 @@
 import { ref, defineProps, watch } from "vue";
 import { useAuthStore } from "@/stores/auth";
 import PostDialog from "../post/PostDialog.vue";
-import Button from "@/components/UI/button/Button.vue";
+import Button from "../../ui/button/Button.vue";
 import router from "@/router";
 import { toast } from "@/utils/utils";
 

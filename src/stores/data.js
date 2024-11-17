@@ -82,5 +82,39 @@ export const useDataStore = defineStore("data", {
         throw new Error(error.response.data);
       }
     },
+
+    async toggleLikePost(postId, path) {
+      let response = null;
+      try {
+        if (redirectIfTokenInvalid()) {
+          return;
+        }
+        if (path === "like-post") {
+          response = await axios.post(`/api/v1/posts/${path}/${postId}`);
+        } else if (path === "unlike-post") {
+          response = await axios.delete(`/api/v1/posts/${path}/${postId}`);
+        }
+        return response.data;
+      } catch (error) {
+        console.log(error);
+        throw new Error(error.response.data);
+      }
+    },
+    async fetchPostsCreatedAtDesc(page, size) {
+      try {
+        if (redirectIfTokenInvalid()) {
+          return;
+        }
+        const response = await axios.get(`/api/v1/posts`, {
+          params: {
+            page: page,
+            size: size,
+          },
+        });
+        return response.data;
+      } catch (error) {
+        throw new Error(error.response.data);
+      }
+    },
   },
 });

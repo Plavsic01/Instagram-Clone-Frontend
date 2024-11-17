@@ -1,12 +1,16 @@
 <script setup>
 import Avatar from "primevue/avatar";
 import { useAuthStore } from "@/stores/auth";
-import { ref, onMounted, onBeforeUnmount, computed } from "vue";
+import { ref, onMounted, onBeforeUnmount, computed, watch } from "vue";
 import { RouterLink } from "vue-router";
+import { toast } from "@/utils/utils";
 
 const authStore = useAuthStore();
 const user = ref({});
 
+const foundUsers = ref([]);
+const searchQuery = ref("");
+const isSearchActive = ref(false);
 const isMobileView = ref(false);
 const isBottomNavbar = ref(false);
 
@@ -18,6 +22,23 @@ onMounted(async () => {
   user.value = await authStore.fetchUser();
   if (user.value === null) {
     user.value = "";
+  }
+});
+
+const searchUser = async (searchQuery) => {
+  try {
+    const users = await authStore.searchUser(searchQuery);
+    foundUsers.value = users;
+  } catch (error) {
+    // toast.error(error.message); // nemam nikakve greske vracam praznu listu ako nema usera
+  }
+};
+
+watch(searchQuery, async (newSearchQuery) => {
+  if (newSearchQuery.trim().length === 0) {
+    foundUsers.value = [];
+  } else {
+    await searchUser(newSearchQuery);
   }
 });
 
@@ -52,6 +73,7 @@ onBeforeUnmount(() => {
         <ul class="list-none p-2">
           <li>
             <RouterLink
+              @click="isSearchActive = false"
               to="/"
               v-ripple
               class="flex items-center cursor-pointer p-4 rounded text-black hover:bg-gray-100 duration-150 transition-colors"
@@ -60,7 +82,52 @@ onBeforeUnmount(() => {
               <span v-if="!isMobileView" class="font-medium">Home</span>
             </RouterLink>
           </li>
-          <li>
+
+          <!-- Search -->
+          <li v-if="!isSearchActive">
+            <a
+              v-ripple
+              @click="isSearchActive = true"
+              class="flex items-center cursor-pointer p-4 rounded text-black hover:bg-gray-100 duration-150 transition-colors"
+            >
+              <i class="pi pi-search mr-2" :style="{ fontSize: iconSize }"></i>
+              <span v-if="!isMobileView" class="font-medium">Search</span>
+            </a>
+          </li>
+
+          <!-- Search Active -->
+          <li v-if="isSearchActive">
+            <div class="flex flex-col p-4">
+              <input
+                type="text"
+                v-model="searchQuery"
+                placeholder="Search..."
+                class="border p-2 rounded mb-4"
+              />
+              <div class="space-y-2">
+                <p>Suggested Users</p>
+                <p v-for="user in foundUsers">
+                  <RouterLink :to="`/${user.username}`">
+                    {{ user.username }}
+                  </RouterLink>
+                </p>
+                <!-- Add suggested users or other search results here -->
+              </div>
+            </div>
+            <a
+              v-ripple
+              @click="isSearchActive = false"
+              class="flex items-center cursor-pointer p-4 rounded text-black hover:bg-gray-100 duration-150 transition-colors"
+            >
+              <i
+                class="pi pi-arrow-left mr-2"
+                :style="{ fontSize: iconSize }"
+              ></i>
+              <span v-if="!isMobileView" class="font-medium">Back</span>
+            </a>
+          </li>
+
+          <!-- <li>
             <a
               v-ripple
               class="flex items-center cursor-pointer p-4 rounded text-black hover:bg-gray-100 duration-150 transition-colors"
@@ -68,7 +135,7 @@ onBeforeUnmount(() => {
               <i class="pi pi-search mr-2" :style="{ fontSize: iconSize }"></i>
               <span v-if="!isMobileView" class="font-medium">Search</span>
             </a>
-          </li>
+          </li> -->
           <li>
             <a
               v-ripple
