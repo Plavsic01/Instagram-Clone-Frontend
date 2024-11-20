@@ -20,7 +20,6 @@ _Create, edit, and delete posts effortlessly._
 ### 💬 Comment Management
 
 - Add, edit, and delete comments (only if you're the owner).
-- Real-time updates on comments.
 
 _Engage with posts through comments._
 
