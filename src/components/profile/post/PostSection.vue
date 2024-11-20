@@ -1,15 +1,19 @@
 <script setup>
-import { ref, defineProps } from "vue";
-import { useRoute } from "vue-router";
+import { ref, toRef, defineProps } from "vue";
 import ProgressSpinner from "primevue/progressspinner";
 import PostModal from "./PostModal.vue";
 
-defineProps({
+const props = defineProps({
   posts: {
+    type: Object,
+  },
+  user: {
     type: Object,
   },
   isLoading: Boolean,
 });
+
+const posts = toRef(props, "posts");
 
 const isModalVisible = ref(false);
 const selectedPost = ref(null);
@@ -23,10 +27,11 @@ const closeModal = () => {
   isModalVisible.value = false;
 };
 
-const route = useRoute();
-const username = route.params.username;
-
-//const username = useRoute().params.username; // ovo ce mi trebati kasnije za edit slika, ali to se nece raditi ovde vec ce imati /edit
+const updatePosts = (postId) => {
+  const index = posts.value.findIndex((post) => post.id === postId);
+  posts.value.splice(index, 1);
+  closeModal();
+};
 </script>
 
 <template>
@@ -74,7 +79,9 @@ const username = route.params.username;
     <PostModal
       v-if="isModalVisible"
       :post="selectedPost"
+      :user="user"
       @close-modal="closeModal"
+      @deleted-post="updatePosts"
     />
   </template>
 </template>

@@ -66,5 +66,5 @@ onMounted(async () => {
     @update-posts="handleUpdatePosts"
   />
 
-  <PostSection :posts="posts" :isLoading="isLoadingPosts" />
+  <PostSection :posts="posts" :user="user" :isLoading="isLoadingPosts" />
 </template>

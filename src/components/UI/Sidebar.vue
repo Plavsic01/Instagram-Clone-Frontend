@@ -3,7 +3,6 @@ import Avatar from "primevue/avatar";
 import { useAuthStore } from "@/stores/auth";
 import { ref, onMounted, onBeforeUnmount, computed, watch } from "vue";
 import { RouterLink } from "vue-router";
-import { toast } from "@/utils/utils";
 
 const authStore = useAuthStore();
 const user = ref({});
@@ -55,9 +54,9 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="flex">
-    <!-- Sidebar (samo za veće ekrane) -->
+    <!-- Main Sidebar -->
     <div
-      v-if="!isBottomNavbar"
+      v-if="!isBottomNavbar && !isSearchActive"
       :class="[
         isMobileView ? 'w-20' : 'w-64',
         'bg-white text-black h-screen flex flex-col fixed border-r border-gray-300 transition-all duration-300',
@@ -73,7 +72,6 @@ onBeforeUnmount(() => {
         <ul class="list-none p-2">
           <li>
             <RouterLink
-              @click="isSearchActive = false"
               to="/"
               v-ripple
               class="flex items-center cursor-pointer p-4 rounded text-black hover:bg-gray-100 duration-150 transition-colors"
@@ -83,8 +81,8 @@ onBeforeUnmount(() => {
             </RouterLink>
           </li>
 
-          <!-- Search -->
-          <li v-if="!isSearchActive">
+          <!-- Activate Search Sidebar -->
+          <li>
             <a
               v-ripple
               @click="isSearchActive = true"
@@ -95,47 +93,6 @@ onBeforeUnmount(() => {
             </a>
           </li>
 
-          <!-- Search Active -->
-          <li v-if="isSearchActive">
-            <div class="flex flex-col p-4">
-              <input
-                type="text"
-                v-model="searchQuery"
-                placeholder="Search..."
-                class="border p-2 rounded mb-4"
-              />
-              <div class="space-y-2">
-                <p>Suggested Users</p>
-                <p v-for="user in foundUsers">
-                  <RouterLink :to="`/${user.username}`">
-                    {{ user.username }}
-                  </RouterLink>
-                </p>
-                <!-- Add suggested users or other search results here -->
-              </div>
-            </div>
-            <a
-              v-ripple
-              @click="isSearchActive = false"
-              class="flex items-center cursor-pointer p-4 rounded text-black hover:bg-gray-100 duration-150 transition-colors"
-            >
-              <i
-                class="pi pi-arrow-left mr-2"
-                :style="{ fontSize: iconSize }"
-              ></i>
-              <span v-if="!isMobileView" class="font-medium">Back</span>
-            </a>
-          </li>
-
-          <!-- <li>
-            <a
-              v-ripple
-              class="flex items-center cursor-pointer p-4 rounded text-black hover:bg-gray-100 duration-150 transition-colors"
-            >
-              <i class="pi pi-search mr-2" :style="{ fontSize: iconSize }"></i>
-              <span v-if="!isMobileView" class="font-medium">Search</span>
-            </a>
-          </li> -->
           <li>
             <a
               v-ripple
@@ -170,7 +127,6 @@ onBeforeUnmount(() => {
           </li>
         </ul>
       </div>
-
       <div class="mt-auto flex items-center p-4 border-gray-300">
         <RouterLink
           :to="`/${authStore.currentUsername}`"
@@ -188,6 +144,51 @@ onBeforeUnmount(() => {
       </div>
     </div>
 
+    <!-- Search Sidebar -->
+    <div
+      v-if="isSearchActive"
+      class="w-64 bg-white text-black h-screen flex flex-col fixed border-r border-gray-300 transition-all duration-300"
+    >
+      <!-- Search Input -->
+      <div class="p-4 border-b">
+        <input
+          type="text"
+          v-model="searchQuery"
+          placeholder="Search..."
+          class="w-full p-2 border rounded"
+        />
+      </div>
+
+      <!-- Search Results -->
+      <div class="p-4 flex-1 overflow-y-auto">
+        <p v-if="foundUsers.length === 0 && searchQuery.trim().length > 0">
+          No users found.
+        </p>
+        <ul v-if="foundUsers.length > 0">
+          <li v-for="user in foundUsers" :key="user.username" class="mb-2">
+            <RouterLink
+              :to="`/${user.username}`"
+              class="flex items-center gap-2 text-black hover:bg-gray-100 p-2 rounded"
+            >
+              <Avatar shape="circle" :image="`${user.profilePictureUrl}`" />
+              <span>{{ user.username }}</span>
+            </RouterLink>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Back Button -->
+      <div class="p-4 border-t">
+        <a
+          v-ripple
+          @click="isSearchActive = false"
+          class="flex items-center cursor-pointer text-black hover:bg-gray-100 p-2 rounded"
+        >
+          <i class="pi pi-arrow-left mr-2"></i>
+          <span>Back</span>
+        </a>
+      </div>
+    </div>
     <!-- Horizontal Navbar (samo za manje ekrane) -->
     <div
       v-if="isBottomNavbar"

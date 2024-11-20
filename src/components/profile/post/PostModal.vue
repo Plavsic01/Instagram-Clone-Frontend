@@ -9,10 +9,10 @@ import { toast, timeAgo } from "@/utils/utils";
 const dataStore = useDataStore();
 const authStore = useAuthStore();
 
-const props = defineProps({ post: Object });
+const props = defineProps({ post: Object, user: Object });
 const post = toRef(props, "post");
 
-const emit = defineEmits(["close-modal"]);
+const emit = defineEmits(["close-modal", "deleted-post"]);
 
 const closeModal = () => {
   emit("close-modal");
@@ -32,6 +32,16 @@ onMounted(async () => {
     }
   }
 });
+
+const removePost = async (id) => {
+  try {
+    const response = await dataStore.removePost(id);
+    toast.success(response);
+    emit("deleted-post", id);
+  } catch (error) {
+    toast.error(error.message);
+  }
+};
 
 // Metoda za dodavanje komentara
 const handleComment = async () => {
@@ -151,11 +161,20 @@ const toggleLikeHandler = async (id) => {
             <!-- Ikonica i korisničko ime na vrhu -->
             <div class="flex items-center space-x-3 mb-2">
               <Avatar
-                :image="`${authStore.currentUserPhotoUrl}`"
+                :image="`${props.user.profilePictureUrl}`"
                 shape="circle"
                 size="large"
               />
-              <p class="font-bold text-sm">{{ authStore.currentUsername }}</p>
+
+              <p class="font-bold text-sm">{{ props.user.username }}</p>
+              <div>
+                <i
+                  v-if="authStore.currentUsername === props.user.username"
+                  class="pi pi-trash text-gray-500 hover:text-gray-700 cursor-pointer"
+                  style="font-size: 1rem"
+                  @click="removePost(props.post.id)"
+                ></i>
+              </div>
             </div>
 
             <!-- Divider -->
@@ -164,12 +183,12 @@ const toggleLikeHandler = async (id) => {
             <!-- Ikonica, korisničko ime i opis posta -->
             <div class="flex items-center space-x-3">
               <Avatar
-                :image="`${authStore.currentUserPhotoUrl}`"
+                :image="`${props.user.profilePictureUrl}`"
                 shape="circle"
                 size="large"
               />
               <div class="flex space-x-2 items-center">
-                <p class="font-bold text-sm">{{ authStore.currentUsername }}</p>
+                <p class="font-bold text-sm">{{ props.user.username }}</p>
                 <p class="text-sm text-gray-700">
                   {{ props.post.description }}
                 </p>

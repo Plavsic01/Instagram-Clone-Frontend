@@ -116,5 +116,16 @@ export const useDataStore = defineStore("data", {
         throw new Error(error.response.data);
       }
     },
+    async removePost(postId) {
+      try {
+        if (redirectIfTokenInvalid()) {
+          return;
+        }
+        const response = await axios.delete(`/api/v1/posts/post/${postId}`);
+        return response.data;
+      } catch (error) {
+        throw new Error(error.response.data);
+      }
+    },
   },
 });
